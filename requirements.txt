@@ -1,3 +1,5 @@
 requests
 azure-cognitiveservices-speech 
 python-dotenv
+sounddevice
+scipy
