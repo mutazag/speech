@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Speech</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        textarea {
+            padding: 10px;
+            width: 300px;
+            height: 100px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: none;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            /* Ensure no custom handlers interfere with copy/paste */
+            -webkit-user-select: text; /* Safari */
+            user-select: text;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .console-container {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .console {
+            margin-top: 20px;
+            padding: 10px;
+            width: 320px;
+            height: 100px;
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+            overflow-y: auto;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .toggle-switch {
+            position: absolute;
+            top: -30px;
+            right: 10px;
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .toggle-switch label {
+            cursor: pointer;
+            text-indent: -9999px;
+            width: 40px;
+            height: 20px;
+            background: grey;
+            display: block;
+            border-radius: 100px;
+            position: relative;
+        }
+
+        .toggle-switch label:after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 90px;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked+label {
+            background: #007bff;
+        }
+
+        .toggle-switch input:checked+label:after {
+            left: calc(100% - 2px);
+            transform: translateX(-100%);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Text to Speech</h1>
+        <textarea id="textInput" placeholder="Enter text here"></textarea>
+        <button onclick="processText()">Convert to Speech</button>
+        <audio id="audioPlayer" controls style="margin-top: 20px; display: none;"></audio>
+    </div>
+    <div class="console-container">
+        <div class="toggle-switch">
+            <input type="checkbox" id="toggleConsole" onclick="toggleConsole()" checked>
+            <label for="toggleConsole"></label>
+        </div>
+        <div class="console" id="consoleOutput">
+
+        </div>
+    </div>
+    <!-- Load configuration file first -->
+    <script src="config.js"></script>
+    <script>
+        // Use environment variables from config file
+        let speechRegion;
+        let speechKey;
+        let speakerProfileId;
+
+        function processText() {
+            const text = document.getElementById('textInput').value;
+            logToConsole(`Converting to speech: ${text}`);
+
+            // Call the text-to-speech API
+            convertTextToSpeech(text);
+        }
+
+        function convertTextToSpeech(text) {
+            const endpoint = `https://${speechRegion}.tts.speech.microsoft.com/cognitiveservices/v1`;
+
+            logToConsole(`Speaker Profile ID: ${speakerProfileId}`);
+            const ssml = `<speak version='1.0' xml:lang='en-US' xmlns='http://www.w3.org/2001/10/synthesis'
+                                xmlns:mstts='http://www.w3.org/2001/mstts'>
+                                <voice name='DragonLatestNeural'>
+                                <mstts:ttsembedding speakerProfileId='${speakerProfileId}'/>
+                                <lang xml:lang='en-US'> ${text} </lang>
+                                </voice></speak> `;
+
+            // Create request headers
+            const headers = new Headers({
+                'Ocp-Apim-Subscription-Key': speechKey,
+                'Content-Type': 'application/ssml+xml',
+                'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+                'User-Agent': 'TextToSpeechApp'
+            });
+
+            // Fetch API to make the request
+            fetch(endpoint, {
+                method: 'POST',
+                headers: headers,
+                body: ssml
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // Create a URL for the audio blob
+                    const url = URL.createObjectURL(blob);
+
+                    // Set the audio source and show the player
+                    const audioPlayer = document.getElementById('audioPlayer');
+                    audioPlayer.src = url;
+                    audioPlayer.style.display = 'block';
+
+                    logToConsole("Speech generated successfully!");
+
+                    // Auto play the audio
+                    audioPlayer.play();
+                })
+                .catch(error => {
+                    logToConsole(`Error: ${error.message}`);
+                    console.error('Error:', error);
+                });
+        }
+
+        function toggleConsole() {
+            const consoleOutput = document.getElementById('consoleOutput');
+            const toggleSwitch = document.getElementById('toggleConsole');
+            if (toggleSwitch.checked) {
+                consoleOutput.style.display = 'block';
+            } else {
+                consoleOutput.style.display = 'none';
+            }
+        }
+
+        function logToConsole(message) {
+            const consoleOutput = document.getElementById('consoleOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.textContent = `[${timestamp}] ${message}\n` + consoleOutput.textContent;
+            console.log(message);
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load configuration from config.js
+            speechRegion = config.speechRegion;
+            speechKey = config.speechKey;
+            speakerProfileId = config.speakerProfileId;
+            
+            logToConsole(`Loaded configuration: Region=${speechRegion}, Profile ID=${speakerProfileId.substring(0, 8)}...`);
+            
+            // Make sure the textarea is focused for easy editing
+            const textInput = document.getElementById('textInput');
+            
+            // Ensure copy and paste operations work as expected
+            textInput.addEventListener('keydown', function(e) {
+                // Allow Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A
+                if ((e.ctrlKey || e.metaKey) && 
+                    ['c', 'v', 'x', 'a'].includes(e.key.toLowerCase())) {
+                    // Let the default browser behavior handle these key combinations
+                    return true;
+                }
+            });
+            
+            logToConsole("Text to Speech ready. Copy/paste shortcuts enabled.");
+        });
+    </script>
+</body>
+
+</html>
