@@ -170,3 +170,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 wav/*.wav
+text-to-speech/config.js
