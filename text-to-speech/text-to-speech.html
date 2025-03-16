@@ -172,6 +172,7 @@
             });
 
             // Fetch API to make the request
+
             fetch(endpoint, {
                 method: 'POST',
                 headers: headers,
@@ -226,22 +227,22 @@
             speechRegion = config.speechRegion;
             speechKey = config.speechKey;
             speakerProfileId = config.speakerProfileId;
-            
+
             logToConsole(`Loaded configuration: Region=${speechRegion}, Profile ID=${speakerProfileId.substring(0, 8)}...`);
-            
+
             // Make sure the textarea is focused for easy editing
             const textInput = document.getElementById('textInput');
-            
+
             // Ensure copy and paste operations work as expected
             textInput.addEventListener('keydown', function(e) {
                 // Allow Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A
-                if ((e.ctrlKey || e.metaKey) && 
+                if ((e.ctrlKey || e.metaKey) &&
                     ['c', 'v', 'x', 'a'].includes(e.key.toLowerCase())) {
                     // Let the default browser behavior handle these key combinations
                     return true;
                 }
             });
-            
+
             logToConsole("Text to Speech ready. Copy/paste shortcuts enabled.");
         });
     </script>
