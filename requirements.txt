@@ -1,6 +1,7 @@
 requests
-azure-cognitiveservices-speech 
+azure-cognitiveservices-speech
 python-dotenv
 sounddevice
 scipy
 matplotlib
+pydantic
